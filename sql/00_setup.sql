@@ -1,21 +1,27 @@
 -- 00_setup.sql
 -- Creates the project catalog and medallion schemas, each with a stated purpose.
 
-CREATE CATALOG IF NOT EXISTS retail;
-COMMENT ON CATALOG retail IS 'Governed retail lakehouse: learning build on Online Retail II (UCI)';
+create catalog if not exists retail;
+show catalogs;
 
-CREATE SCHEMA IF NOT EXISTS retail.bronze COMMENT 'Raw data exactly as received; no changes, load metadata added';
-CREATE SCHEMA IF NOT EXISTS retail.silver COMMENT 'Validated and conformed data; only rows that pass DQ rules';
-CREATE SCHEMA IF NOT EXISTS retail.gold   COMMENT 'Certified, business-ready aggregates for reporting';
-CREATE SCHEMA IF NOT EXISTS retail.dq     COMMENT 'Data quality artefacts: quarantine, rule results, monitor metrics, incidents';
+comment on catalog retail is 'Governed retail lakehouse: learning build on Online Retail II (UCI)';
+create schema if not exists retail.bronze comment 'Raw data exactly as received; no changes, load metadata added';
+create schema if not exists retail.silver comment'Validated and conformed data; only rows that pass DQ rules';
+create schema if not exists retail.gold comment 'Certified, business-ready aggregates for reporting';
+create schema if not exists retail.dq comment 'Data quality artefacts: quarantine, rule results, monitor metrics, incidents';
 
--- D001: remove the auto-created default schema
-DROP SCHEMA IF EXISTS retail.default;
+show schemas in retail;
 
--- Evidence: every schema has a description
-SELECT schema_name, comment
-FROM retail.information_schema.schemata
-ORDER BY schema_name;
+describe catalog extended retail;       
+describe schema extended retail.bronze;
+describe schema extended retail.silver;
+describe schema extended retail.gold;
+
+select schema_name, comment 
+from retail.information_schema.schemata
+order by schema_name;
+
+drop schema if exists retail.default;
 
 -- Next (Week 1, Tuesday): landing volume for raw source files
 -- CREATE VOLUME IF NOT EXISTS retail.bronze.landing
