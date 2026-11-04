@@ -22,7 +22,7 @@ Run `sql/04_profile_bronze.sql` and fill in one row per issue. Leave a row out i
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | F006 | P1 | Completeness | customer_id | 243,007 | 22.77% | blank | Is a sale without a customer valid (e.g. guest checkout)? | Keep rows (the sale happened); flag `has_customer = false`; exclude from customer-level Gold, include in sales totals |
 | F007 | P1 | Completeness, Validity | description | 4,382 | 0.41% | blank description, price 0, no customer | Are these real sales or stock adjustments? | Confirmed 2026-11-04: all 4,382 rows have price = 0 and no customer, so they are non-sale records (likely stock adjustments). Route to quarantine or flag `is_sale = false`; exclude from sales metrics |
-| F008 | P2 | Uniqueness | all source columns | 34,335 extra copies (1,067,371 rows; 1,033,036 distinct) | 3.22% | One identical line appears 20 times, all from the same file and same load | Genuine repeat lines or source duplication? Not a load duplicate: copies share one file and one load time. Pending: check for duplicates across the two files (sheets may overlap in early Dec 2010) | Keep first copy (`ROW_NUMBER() = 1`); route extra copies to quarantine with reason `duplicate`, pending business confirmation |
+| F008 | P2 | Uniqueness | all source columns | 34,335 extra copies (1,067,371 rows; 1,033,036 distinct) | 3.22% | One identical line appears 20 times within one file and one load; 22,202 identical row groups appear in both source files | Two causes: (a) the two source sheets overlap in date range, so some transactions are delivered twice; (b) identical lines repeat within a single file. Pending: split of the 34,335 between (a) and (b), and the overlap date window | (a) keep one copy, quarantine the cross-file copy with reason `source_overlap`; (b) keep first copy, quarantine the rest with reason `duplicate_in_file`, pending business confirmation that repeats aren't genuine |
 | F009 | P4 | Validity | quantity | | | | Are negatives returns, errors or adjustments? | |
 | F010 | P4 | Validity | price | | | | Are zero prices free items or errors? | |
 | F011 | P5 | Validity | invoice | | | | What do non-standard invoice prefixes mean? | |
@@ -37,7 +37,7 @@ Run `sql/04_profile_bronze.sql` and fill in one row per issue. Leave a row out i
 | --- | --- | --- |
 | P0 Row count | 2026-11-03 | 1,067,371 rows, matches Bronze reconciliation |
 | P1 Completeness | 2026-11-03 | customer_id 22.77% missing; description 0.41% missing; all other source columns 100% complete. Follow-up 2026-11-04: all missing-description rows have price = 0 and no customer |
-| P2 Duplicates | 2026-11-04 | 34,335 extra copies (3.22%). Counted with `COUNT(DISTINCT struct(...))` so rows with blank customer_id are included; examples via `ROW_NUMBER()` + `QUALIFY` |
+| P2 Duplicates | 2026-11-04 | 34,335 extra copies (3.22%). Counted with `COUNT(DISTINCT struct(...))` so rows with blank customer_id are included; examples via `ROW_NUMBER()` + `QUALIFY`. Follow-up: 22,202 duplicate groups span both source files |
 | P3 Type validity | 2026-11-04 | 0 failures: every quantity is an integer, every price numeric, every invoice_date parses as yyyy-MM-dd HH:mm:ss, every non-blank customer_id is digits only (no `.0` from the Excel conversion). Clean result recorded as evidence |
 | P4 Sign and range | | |
 | P5 Invoice patterns | | |

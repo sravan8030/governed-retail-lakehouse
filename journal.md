@@ -60,7 +60,7 @@
 - Fix: dropped, recreated and reloaded `retail.bronze.transactions` with `inferColumnTypes => false`.
 - Evidence: reconciliation re-run and passed (525,461 + 541,910 = 1,067,371 rows; 0 rescued). Spot-check shows source text unchanged: `invoice_date` = `2010-12-01 08:26:00`, `price` = `2.55`, `customer_id` = `17850` (no `.0` added by the Excel conversion). All columns typed `STRING`.
 - Lesson: the drop-and-recreate reset the table's Delta history, so the first (inferred) load is no longer visible in `DESCRIBE HISTORY`.
-- Bronze load changed to a rerunnable pattern: `CREATE TABLE IF NOT EXISTS` then `INSERT OVERWRITE` (no `DROP`), which keeps the table's history, comments, owner, grants and tags on every rerun.
+- Bronze load changed in Databricks to a rerunnable pattern: `CREATE TABLE IF NOT EXISTS` then `INSERT OVERWRITE` (no `DROP`), which keeps the table's history, comments, owner, grants and tags on every rerun.
 
 **Learned**
 - `_rescued_data` ≈ SAS "invalid data" notes, except the original value is kept rather than set to missing.
@@ -72,5 +72,5 @@
 - `.ipynb` (Jupyter notebook format) stores outputs as well as code, so it can carry data rows into Git. The repo holds plain source files only.
 
 **Next**
-- Copy the updated Bronze load from Databricks into `sql/02_bronze_load.sql` in the repo (the repo copy still has `DROP TABLE` and no `INSERT OVERWRITE`).
-- Profile Bronze (nulls, duplicates, negatives, zero prices, cancellations, non-product codes, length distributions) into `findings.md`. Planned for Wednesday 4 Nov; Bronze is ready, so it can start earlier. CDMP prep takes priority until the exam on 7 Nov.
+- Copy the updated Bronze load from Databricks into `sql/02_bronze_load.sql` in the repo (the repo copy still has `DROP TABLE` and `INSERT INTO`).
+- Profile Bronze (nulls, duplicates, negatives, zero prices, cancellations, non-product codes, length distributions) into `findings.md`. Planned for Wednesday 4 Nov; Bronze is ready, so it can start earlier.
