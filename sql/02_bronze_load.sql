@@ -9,7 +9,7 @@ select *
 from read_files('/Volumes/retail/bronze/landing/*.csv', format => 'csv', header => true, infercolumntypes=>false )
 Limit 20;
 
-drop table if exists retail.bronze.transactions;
+--drop table if exists retail.bronze.transactions;
 
 create table if not exists retail.bronze.transactions (
   invoice        STRING    COMMENT 'Invoice number as received; values starting with C are cancellations',
@@ -27,7 +27,7 @@ create table if not exists retail.bronze.transactions (
 COMMENT 'Online Retail II transactions exactly as received, plus load metadata';
 
 
-insert into retail.bronze.transactions 
+insert OVERWRITE retail.bronze.transactions 
 SELECT
   CAST(Invoice AS STRING),
   CAST(StockCode AS STRING),
