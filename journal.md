@@ -74,3 +74,40 @@
 **Next**
 - Copy the updated Bronze load from Databricks into `sql/02_bronze_load.sql` in the repo (the repo copy still has `DROP TABLE` and `INSERT INTO`).
 - Profile Bronze (nulls, duplicates, negatives, zero prices, cancellations, non-product codes, length distributions) into `findings.md`. Planned for Wednesday 4 Nov; Bronze is ready, so it can start earlier.
+
+## 2026-11-03 to 2026-11-04
+
+**Done**
+- Wrote `sql/04_profile_bronze.sql` (P0–P12) and profiled `retail.bronze.transactions`, then ran follow-up queries where a result raised a question (P9b–c, P10b–c, P12b).
+- Logged 19 profiling findings (F006–F024) in `docs/findings.md`, each with its DQ dimension, size, open question and proposed treatment, plus a checks-run table recording when each check ran and what it returned.
+- Every count reconciles back to the Bronze total of 1,067,371 rows.
+
+**Main findings**
+- Customer ID missing on 22.77% of rows (F006). Kept, flagged `has_customer`.
+- 34,335 extra duplicate copies (3.22%), two-thirds from the two source files overlapping on 1–9 Dec 2010 (F008).
+- Non-product lines mixed into sales: postage, fees, discounts, manual adjustments, bad debt, vouchers, test records (F012, F016, F019). Needs a `line_type` classification driven by a reference list, not a code pattern.
+- No product master: one stock code carries several descriptions (F014). Whitespace explains only 78 of 5,698 distinct descriptions (F024), so a frequency rule is still needed.
+- All 135 days with no data are explained: 104 Saturdays (no Saturday trading), 17 UK bank holidays including the one-off Royal Wedding holiday, holiday Sundays and the Christmas shutdown (F015). The one Saturday with data (5 Dec 2009) is genuine trading.
+- Country is free text: placeholder "Unspecified", regions that aren't countries, mixed naming (EIRE, USA, RSA) (F022). 13 customers have two countries; 5 use both at the same time, so country can't be a pure customer attribute (F023).
+- Free-text fields carry staff names and write-off reasons (F017, F021).
+
+**Silver design taken from profiling**
+- Derived columns: `line_type`, `invoice_type`; flags `has_customer`, `is_free_item`, `is_return`, `country_conflict`.
+- Quarantine reasons: `source_overlap`, `duplicate_in_file`, `test_record`, `unknown_invoice_type`, `unknown_country`.
+- Reference tables, each needing an owner: stock-code classification, country to ISO 3166 code, trading calendar, write-off reason codes.
+- Geographic reporting uses the country on the transaction, never the customer's country.
+
+**Learned**
+- Profile, don't fix: Bronze stays as received; every anomaly becomes a finding with a treatment, applied in Silver.
+- Count a problem at both levels. Whitespace affects 19.9% of rows but only 1.4% of distinct values; reporting only the first overstates it.
+- Placeholders such as "Unspecified" are missing values a NULL/blank check can't see.
+- Reference data that can't be derived by rule (one-off holidays, substitute days, non-product codes) has to be loaded from a maintained list.
+- Code length and pattern can't classify stock codes: products and non-products overlap at lengths 4 to 8.
+- SQL: `UNPIVOT` (≈ `PROC TRANSPOSE`); `COUNT(DISTINCT struct(...))` so NULLs count; `sequence()` + `explode` to build a calendar; `LEFT ANTI JOIN` to find what's missing; `try_cast` to test types on `STRING` columns.
+
+**Next**
+- Save the follow-up queries (P9b–c, P10b–c, P12b) into `sql/04_profile_bronze.sql`.
+- Copy the `INSERT OVERWRITE` Bronze load into `sql/02_bronze_load.sql`; remove the stray "k" at the end of `sql/03_setup_audit_views.sql`; commit and push.
+- Record decisions D003–D005 in `docs/decisions.md`.
+- CDMP Fundamentals exam on Saturday 7 Nov takes priority.
+- After the exam: definitions, critical data elements and `rules/silver_transactions.yaml`, then the Silver build.
