@@ -40,7 +40,7 @@ SELECT
   _metadata.file_name,
   current_timestamp(),
   _rescued_data
-FROM read_files('/Volumes/retail/bronze/landing/*.csv', format => 'csv', header => true);
+FROM read_files('/Volumes/retail/bronze/landing/*.csv', format => 'csv', header => true, infercolumntypes =>false );
 
 
 describe table retail.bronze.transactions;

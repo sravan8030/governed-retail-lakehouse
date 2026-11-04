@@ -39,4 +39,4 @@ UNION ALL SELECT 'retail', COUNT(*) FROM retail.dq.audit_retail
 UNION ALL SELECT 'privileged', COUNT(*) FROM retail.dq.audit_privileged_changes;
 describe table extended retail.dq.audit_users;
 describe table extended retail.dq.audit_retail;
-describe table extended retail.dq.audit_privileged_changes;k
+describe table extended retail.dq.audit_privileged_changes;

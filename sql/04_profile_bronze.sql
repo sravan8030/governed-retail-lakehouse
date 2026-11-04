@@ -219,7 +219,7 @@ SELECT
            MIN(to_date(try_to_timestamp(invoice_date, 'yyyy-MM-dd HH:mm:ss')))) + 1 AS days_in_range
 FROM retail.bronze.transactions;
 
--- P9A. Non-Saturday days with no data: check against UK bank holidays and Christmas
+-- P9A.  Days with no data, by weekday
 WITH days AS (
   SELECT explode(sequence(DATE'2009-12-01', DATE'2011-12-09', INTERVAL 1 DAY)) AS d
 ),
