@@ -54,3 +54,22 @@ A field is critical if an error in it changes revenue, customer counts or a regu
 3. For the 13 customers with two countries: one customer with several sites, or several customers sharing an ID? (F023)
 4. Is the Christmas shutdown (24–31 Dec) a standing rule? (F015)
 5. Should test records (TEST001, TEST002) be removed at source? (F019)
+
+## 5. Classification tags
+
+Tags are labels stored in Unity Catalog. Databricks gives them no meaning; the meaning is defined here, and the controls listed below check that it is followed. Only the keys and values in this table may be used.
+
+| Tag key | Allowed values | Meaning | Applied to |
+| --- | --- | --- | --- |
+| `cde` | `true` | A critical data element (section 2) | `invoice`, `stock_code`, `quantity`, `price`, `invoice_date`, `customer_id`, `country` |
+| `pii` | `direct_id` | Identifies a person on its own (e.g. name, email) | None in this dataset |
+| `pii` | `pseudonymous_id` | Identifies a person or business only through a lookup | `customer_id` |
+| `pii` | `quasi_id` | Could identify someone in combination with other columns | None tagged yet |
+
+**Rules**
+
+1. Any column tagged `pii`, whatever its value, must have a column mask. A tag alone does not protect anything: the mask function sets who sees what, and `ALTER COLUMN … SET MASK` attaches it to the column. Checked by the PII mask coverage control in `sql/06_governance_masking.sql` (expected result: 0 rows).
+2. Unmasked access to `pii` columns is granted only through membership of the account group `pii_readers` (D011).
+3. Tag keys and values are lower case and must come from the table above. A tag outside this list is an exception to be corrected.
+
+Until attribute-based access control (ABAC) policies are available, rule 1 is enforced by the control query, not by the platform. With ABAC, a policy on the `pii` tag would apply the mask automatically.

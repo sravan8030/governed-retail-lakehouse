@@ -1,0 +1,66 @@
+-- 06_governance_masking.sql
+CREATE SCHEMA IF NOT EXISTS retail.governance
+  COMMENT 'Policy functions: column masks and row filters. Changes here change who sees what';
+
+show schemas in retail;
+describe schema extended retail.governance ;
+
+select *
+from retail.information_schema.schemata
+order by created
+;
+select *
+from retail.information_schema.tables 
+order by created
+;
+select *
+from retail.information_schema.routines 
+order by created
+;
+
+CREATE OR REPLACE FUNCTION retail.governance.mask_pseudonymous_id(id STRING)
+RETURNS STRING
+COMMENT 'Column mask for pii = pseudonymous_id. Members of pii_readers see the value, for rest its redacted. Not hashed: 5-digit IDs are reversible by brute force'
+RETURN CASE
+  WHEN id IS NULL THEN NULL
+  WHEN is_account_group_member('pii_readers') THEN id
+  ELSE '*****'
+END;
+
+ALTER TABLE retail.bronze.transactions
+  ALTER COLUMN customer_id SET MASK retail.governance.mask_pseudonymous_id;
+
+-- Test 1: you are not in pii_readers, so you should see ***** (owners are not exempt)
+SELECT customer_id, COUNT(*) AS rows
+FROM retail.bronze.transactions
+GROUP BY customer_id
+ORDER BY rows DESC
+LIMIT 5;
+
+-- Test 2: after joining pii_readers
+SELECT is_account_group_member('pii_readers') AS am_i_a_reader;   -- expect true
+
+SELECT customer_id, COUNT(*) AS rows
+FROM retail.bronze.transactions
+GROUP BY customer_id
+ORDER BY rows DESC
+LIMIT 5;                                                          -- expect real IDs again
+
+-- Control: every column tagged pii must have a column mask (expect 0 rows)
+select * from retail.information_schema.column_tags;
+select * from retail.information_schema.column_masks;
+
+SELECT t.catalog_name, t.schema_name, t.table_name, t.column_name, t.tag_value
+FROM retail.information_schema.column_tags t
+LEFT ANTI JOIN retail.information_schema.column_masks m
+  ON  m.table_catalog = t.catalog_name
+  AND m.table_schema  = t.schema_name
+  AND m.table_name    = t.table_name
+  AND m.column_name   = t.column_name
+WHERE t.tag_name = 'pii';
+
+ALTER TABLE retail.bronze.transactions ALTER COLUMN country SET TAGS ('pii' = 'test');
+
+-- rerun the control: expect 1 row, country
+ALTER TABLE retail.bronze.transactions ALTER COLUMN country UNSET TAGS ('pii');
+-- rerun again: back to 0 rows

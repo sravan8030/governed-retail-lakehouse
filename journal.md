@@ -111,3 +111,36 @@
 - Record decisions D003–D005 in `docs/decisions.md`.
 - CDMP Fundamentals exam on Saturday 7 Nov takes priority.
 - After the exam: definitions, critical data elements and `rules/silver_transactions.yaml`, then the Silver build.
+
+## 2026-11-11 to 2026-11-15
+
+**Done**
+- Passed CDMP Data Management Fundamentals (7 Nov).
+- Wrote `docs/definitions.md`: 15 business terms, 9 critical data elements, 4 reference tables and 5 open questions for the business owner, each tied to profiling findings.
+- Recorded decisions D003–D011 in `docs/decisions.md`.
+- Tagged the 7 source CDE columns `cde = true` and `customer_id` `pii = pseudonymous_id` (`sql/05_governance_tags.sql`). Verified with `information_schema.column_tags`.
+- Created `retail.governance` for policy functions, wrote the mask `mask_pseudonymous_id` and attached it to `customer_id` (`sql/06_governance_masking.sql`).
+- Created the account group `pii_readers`.
+
+**Evidence**
+
+| Test | Expected | Result |
+| --- | --- | --- |
+| Mask, not in `pii_readers` (as table owner) | IDs shown as `*****`; nulls unchanged | 824,364 `*****`, 243,007 null: Pass |
+| Mask, after joining `pii_readers` | Real IDs | 17841, 14911, 12748 … ; null still 243,007: Pass |
+| Control: every `pii` column has a mask | 0 rows | 0 rows: Pass |
+| Negative test: tag `country` as `pii` without a mask | 1 row (country) | 1 row: Pass (control caught it) |
+| After removing the test tag | 0 rows | 0 rows: Pass |
+
+**Learned**
+- `is_account_group_member()` checks the person running the query, on every query. Access isn't stored in the data, so removing someone from the group takes effect on their next query. One mask replaces the Teradata pattern of a view per role.
+- A mask is fine-grained RBAC: role-based, applied inside the data. ABAC goes further: one policy on a tag masks every tagged column, so a tagged-but-unmasked gap can't happen. Without ABAC, the control query covers that gap.
+- An unsalted hash of a short ID is reversible by brute force (5 digits = 100,000 values), so it isn't pseudonymisation. Redact in Bronze; use a surrogate key with a restricted mapping in Silver.
+- Masks affect jobs as well as people: any check or build that reads `customer_id` must run as a `pii_readers` member, or it sees `*****`.
+- `information_schema` views name the same things differently (`catalog_name` vs `table_catalog`). A control joined on the wrong names matches nothing and passes silently.
+- Test that a control fails when it should, not only that it passes.
+
+**Next**
+- Commit `docs/definitions.md`, `docs/decisions.md`, `sql/05_governance_tags.sql`, `sql/06_governance_masking.sql` and this journal.
+- Week 2 continues: ownership and grants (who owns each schema; groups for engineers and analysts), then lineage.
+- Try ABAC (a tag-driven policy) if Free Edition supports it.
