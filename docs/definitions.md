@@ -65,6 +65,8 @@ Tags are labels stored in Unity Catalog. Databricks gives them no meaning; the m
 | `pii` | `direct_id` | Identifies a person on its own (e.g. name, email) | None in this dataset |
 | `pii` | `pseudonymous_id` | Identifies a person or business only through a lookup | `customer_id` |
 | `pii` | `quasi_id` | Could identify someone in combination with other columns | None tagged yet |
+| `data_owner` | An account group name | The group accountable for the data (DAMA data owner); business ownership, separate from the Unity Catalog `OWNER` | Catalog `retail`: `retail_data_owners` |
+| `data_steward` | An account group name | The group responsible for definitions, rules and quality | Catalog `retail`: `retail_data_stewards` |
 
 **Rules**
 

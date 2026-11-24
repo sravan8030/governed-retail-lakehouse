@@ -13,6 +13,7 @@ Every data or metadata issue found during the build, with its DQ dimension and w
 | F003 | 2026-11-01 | Platform masks columns in its own audit data | `updateTables` events on `system.access.audit`, `system.query.history` | None; reference example of masking |
 | F004 | 2026-11-01 | Seven platform-created external HTTP connectors in `system.ai` | `createConnection` audit events | Note for Week 2: external access needs an approval record |
 | F005 | 2026-11-01 | Reserved admin groups get `system` catalog access automatically | `updatePermissions` audit events | Document built-in privileged access in Week 2 |
+| F025 | 2026-11-24 | Free Edition does not allow granting `system` tables to a group (`MANAGE` on catalog `system` refused). A view runs with its owner's rights, so the three audit views in `retail.dq` stopped working once the stewards group owned them | `INSUFFICIENT_PERMISSIONS` on `dq.audit_users` after the ownership transfer; `PERMISSION_DENIED` on `GRANT ... ON CATALOG system` | Views returned to individual ownership as documented exceptions in `retail.dq.control_exceptions`, reviewed every 90 days (D014). In a full workspace, grant stewards `SELECT` on `system.access.audit` and move the views back to the group |
 
 ## Bronze profiling (retail.bronze.transactions, 1,067,371 rows)
 
