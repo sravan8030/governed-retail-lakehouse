@@ -144,3 +144,44 @@
 - Commit `docs/definitions.md`, `docs/decisions.md`, `sql/05_governance_tags.sql`, `sql/06_governance_masking.sql` and this journal.
 - Week 2 continues: ownership and grants (who owns each schema; groups for engineers and analysts), then lineage.
 - Try ABAC (a tag-driven policy) if Free Edition supports it.
+
+## 2026-11-16 to 2026-11-24
+
+**Done**
+- Created four account groups: `retail_data_owners`, `retail_data_stewards`, `retail_data_engineers`, `retail_analysts`.
+- Moved technical ownership of the catalog, all five schemas and their objects from my user to groups (`sql/07_governance_ownership.sql`): engineers own the catalog, `bronze`, `silver` and `gold`; stewards own `dq` and `governance`.
+- Recorded business ownership as `data_owner` and `data_steward` tags on the catalog, and added both keys to the tag vocabulary in `docs/definitions.md`.
+- Granted least-privilege access to groups: discovery for all; analysts read Gold only; owners read Silver, Gold and DQ results; stewards read every data layer; engineers write rows into `dq`.
+- Dropped `bronze.test`, an unexplained leftover table.
+- Created `retail.dq.control_exceptions` for documented exceptions to controls.
+- Recorded F025, D013 and D014.
+
+**Evidence**
+
+| Test | Expected | Result |
+| --- | --- | --- |
+| Group membership check before transfer | All four true | All true: Pass |
+| Control `CTL_OWNERSHIP_NO_PERSON` before transfer (negative test) | Person-owned objects listed | 9 rows (5 schemas, 4 tables/views): Pass |
+| Audit view after transfer to stewards | Works | `INSUFFICIENT_PERMISSIONS`: the view's owner lacks access to `system.access` |
+| Grant stewards access to `system.access.audit` | Granted | `PERMISSION_DENIED`: no `MANAGE` on catalog `system` in Free Edition (F025) |
+| Audit views returned to my user as exceptions | View works | 21,668 rows: Pass |
+| Control after transfer, excluding recorded exceptions | 0 rows | 0 rows: Pass |
+| Schema grants | Match the access matrix | 18 rows, all match: Pass |
+| Catalog grants | `BROWSE`, `USE_CATALOG` for owners, stewards, analysts | 6 rows: Pass |
+| Business-ownership tags | 2 tags on `retail` | 2 rows: Pass |
+
+**Learned**
+- A Unity Catalog owner is not a DAMA data owner. `OWNER` is a technical right (it can grant access), like `chown`; business accountability is recorded separately, as tags.
+- Objects should be owned by groups, never people: a person-owned object is orphaned when they leave.
+- Changing a schema's owner does not change the owners of objects inside it, like `chown` without `-R`.
+- Schema grants also cover tables created later, unlike `chmod` on a directory.
+- A view runs with its owner's rights, as in Teradata. Moving a view's ownership can break it if the new owner can't read the source tables.
+- `GRANT` takes one principal per statement. For the same access across several groups, grant to an access group and make the role groups members.
+- A control should be seen to fail before it passes. A control written for one person (`'sravan%@%'`) would miss everyone else; the general pattern (`'%@%'`) catches any person.
+- An exception is acceptable when it is recorded with a reason, an accountable group and a review date. Keeping exceptions in a table lets the control pass without hiding anything.
+- Owners do not appear in `schema_privileges`; ownership and grants need separate evidence.
+
+**Next**
+- Tag-vocabulary control (rule 3 in `definitions.md` section 5).
+- Row filter by country; ABAC trial on the `pii` tag; data protection note.
+- Reference tables in Silver, then the rules file and the Silver build as a declarative pipeline.
