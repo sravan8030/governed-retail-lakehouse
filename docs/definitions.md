@@ -70,7 +70,7 @@ Tags are labels stored in Unity Catalog. Databricks gives them no meaning; the m
 
 **Rules**
 
-1. Any column tagged `pii`, whatever its value, must be masked, either by a per-column mask or by an ABAC column-mask policy that matches its tag value and exempts `pii_readers`. A tag alone does not protect anything. `pii` is a governed tag: Databricks refuses values outside the three allowed. Checked by PII coverage control v2 in `sql/11_governance_abac.sql` (expected result: 0 rows).
+1. Any column tagged `pii`, whatever its value, must be masked, either by a per-column mask or by an ABAC column-mask policy that matches its tag value and exempts `pii_readers`. A tag alone does not protect anything. `pii` is a governed tag: Databricks refuses values outside the three allowed. Checked by PII coverage control v2 in `sql/11_governed_value_tags_ABAC.sql` (expected result: 0 rows).
 2. Unmasked access to `pii` columns is granted only through membership of the account group `pii_readers` (D011).
 3. Tag keys and values are lower case and must come from the table above. A tag outside this list is an exception to be corrected.
 

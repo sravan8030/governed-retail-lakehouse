@@ -27,8 +27,10 @@ RETURN CASE
   ELSE '*****'
 END;
 
-ALTER TABLE retail.bronze.transactions
-  ALTER COLUMN customer_id SET MASK retail.governance.mask_pseudonymous_id;
+-- Superseded on 2026-11-24 by ABAC policy mask_pii_pseudonymous (D017). Re-attaching this per-column mask
+-- would put two masks on customer_id. Kept as a record of the 15 Nov design.
+-- ALTER TABLE retail.bronze.transactions
+--   ALTER COLUMN customer_id SET MASK retail.governance.mask_pseudonymous_id;
 
 -- Test 1: you are not in pii_readers, so you should see ***** (owners are not exempt)
 SELECT customer_id, COUNT(*) AS rows
@@ -46,6 +48,8 @@ GROUP BY customer_id
 ORDER BY rows DESC
 LIMIT 5;                                                          -- expect real IDs again
 
+-- Superseded by PII coverage control v2 in 11_governed_value_tags_ABAC.sql (F028).
+-- This v1 only reads column_masks, so it now reports customer_id (protected by the ABAC policy) as a false gap.
 -- Control: every column tagged pii must have a column mask (expect 0 rows)
 select * from retail.information_schema.column_tags;
 select * from retail.information_schema.column_masks;

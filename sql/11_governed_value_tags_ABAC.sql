@@ -1,6 +1,7 @@
 --Step 1: governed value tags and policy enforce.
 --1. Re-apply the tag, so it's definitely set under the governed definition (harmless if it already was)
-ALTER TABLE retail.bronze.transactions ALTER COLUMN customer_id UNSET TAGS ('pii');
+-- One-time re-apply on 2026-11-24; the SET below is enough on a re-run.
+-- ALTER TABLE retail.bronze.transactions ALTER COLUMN customer_id UNSET TAGS ('pii');
 ALTER TABLE retail.bronze.transactions ALTER COLUMN customer_id SET TAGS ('pii' = 'pseudonymous_id');
 
 SELECT column_name, tag_name, tag_value
@@ -9,7 +10,8 @@ WHERE tag_name = 'pii';
 
 --2. Negative test: does the governed tag refuse a bad value:
 -- Expect an ERROR: 'test' is not an allowed value for governed tag pii
-ALTER TABLE retail.bronze.transactions ALTER COLUMN country SET TAGS ('pii' = 'test');
+-- Negative test, run once: refused with UC_TAG_POLICY_VALUE_NOT_ALLOWED.
+-- ALTER TABLE retail.bronze.transactions ALTER COLUMN country SET TAGS ('pii' = 'test');
 
 --Step 2: the ABAC policy.
 --DROP POLICY mask_pii_pseudonymous ON SCHEMA retail.bronze;
@@ -30,7 +32,8 @@ SHOW POLICIES ON SCHEMA retail.bronze;
 DESCRIBE POLICY mask_pii_pseudonymous ON SCHEMA retail.bronze;
 
 -- 1. Remove the per-column mask; the policy should take over
-ALTER TABLE retail.bronze.transactions ALTER COLUMN customer_id DROP MASK;
+-- One-time migration on 2026-11-24 from per-column mask to ABAC policy (D017).
+-- ALTER TABLE retail.bronze.transactions ALTER COLUMN customer_id DROP MASK;
 
 -- 2. As a pii_readers member: expect real IDs (17841, 14911, ...)
 SELECT customer_id, COUNT(*) AS rows
