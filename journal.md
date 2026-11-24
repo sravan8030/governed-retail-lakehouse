@@ -185,3 +185,42 @@
 - Tag-vocabulary control (rule 3 in `definitions.md` section 5).
 - Row filter by country; ABAC trial on the `pii` tag; data protection note.
 - Reference tables in Silver, then the rules file and the Silver build as a declarative pipeline.
+
+## 2026-11-24 (continued): tag vocabulary, group rename, row filter
+
+**Done**
+- `sql/08_governance_tag_controls.sql`: approved tag vocabulary as reference data (`retail.governance.tag_vocabulary`, owned by stewards) and control `CTL_TAG_VOCABULARY`.
+- Found and fixed a leftover test tag (`pii = test` on `country`) that had silently broken the PII mask control (F026). Negative-test lines in `06` commented out in both the notebook and the repo.
+- The ownership control caught `tag_vocabulary` owned by me; ownership moved to stewards. Standing rule from now on: assign the owning group on the line after every `CREATE`.
+- Renamed `retail_analysts` to `retail_data_analysts` without a rename feature: created the new group, moved the grants, revoked from the old one, ran a four-part retirement checklist, then deleted it (F027, D015).
+- `sql/09_governance_row_filter.sql`: country mapping table, row filter `filter_country` on `bronze.transactions`, and `retail_all_regions` with the three role groups nested in it (D016).
+
+**Evidence**
+
+| Test | Expected | Result |
+| --- | --- | --- |
+| `CTL_TAG_VOCABULARY`, first run | 0 rows | 1 row: `country`, `pii = test` (real leftover): Fail, correctly |
+| PII mask control, rerun | 0 rows | 1 row: `country`, with no mask: confirms the silent break |
+| Both controls after removing the tag | 0 rows | 0 rows each: Pass |
+| Ownership control after creating `tag_vocabulary` | 0 rows | 1 row: `governance.tag_vocabulary`; 0 after fix |
+| Retirement checklist for `retail_analysts` | 0 everywhere | 0 grants, 0 owned objects, 0 references; UI tabs clear: Pass |
+| `retail_data_analysts` grants | 4 | `BROWSE`, `USE_CATALOG`, Gold `SELECT`, `USE_SCHEMA`: Pass |
+| Row filter, analyst only | United Kingdom only | 1 country, 981,330 rows: Pass |
+| Row filter, all-regions directly | All rows | 43 countries, 1,067,371 rows: Pass |
+| Row filter, all-regions through nested role groups | All rows | 43 countries, 1,067,371 rows: Pass |
+
+**Learned**
+- A vocabulary control catches what a dependent control misses: the mask control only looks for `pii`, so a misspelled or test tag goes unseen.
+- Controls protect only when they run regularly. Two real breaks were found today simply by rerunning controls.
+- Backticks for names, single quotes for values.
+- `USE CATALOG` and `USE SCHEMA` are gates, like UNIX `x` on a directory; `SELECT` is the read, like `r` on a file.
+- `GRANT` takes one principal per statement.
+- Account groups can't be renamed in Free Edition, and `DROP GROUP` only handles legacy local groups. Grants are held against the group's ID, so revoke before deleting.
+- A mapping table that stores group names as text has no referential integrity: a typo gives access to nobody, silently.
+- One row filter per table, but the function can take several columns and combine rules; the mapping table can be generalised to (group, attribute, value).
+- `is_account_group_member` follows nested groups, so access can be granted to role groups through an access group.
+- `ALTER TABLE ... DROP ROW FILTER` and `ALTER COLUMN ... DROP MASK` remove protections; keep such lines out of build scripts.
+
+**Next**
+- ABAC trial on the `pii` tag; data protection note.
+- Reference tables in Silver.
