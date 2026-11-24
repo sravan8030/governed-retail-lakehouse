@@ -59,8 +59,9 @@ LEFT ANTI JOIN retail.information_schema.column_masks m
   AND m.column_name   = t.column_name
 WHERE t.tag_name = 'pii';
 
-ALTER TABLE retail.bronze.transactions ALTER COLUMN country SET TAGS ('pii' = 'test');
+-- Negative test, run once on 2026-11-15. Commented out so a full re-run cannot reapply the tag (see F026).
+-- ALTER TABLE retail.bronze.transactions ALTER COLUMN country SET TAGS ('pii' = 'test');
 
 -- rerun the control: expect 1 row, country
-ALTER TABLE retail.bronze.transactions ALTER COLUMN country UNSET TAGS ('pii');
+-- ALTER TABLE retail.bronze.transactions ALTER COLUMN country UNSET TAGS ('pii');
 -- rerun again: back to 0 rows
