@@ -43,6 +43,13 @@ WHERE routine_schema = 'governance';
 --Apply Row filter on the table
 ALTER TABLE retail.bronze.transactions SET ROW FILTER retail.governance.filter_country ON (country);
 
+SELECT country, COUNT(*) AS total_rows
+FROM retail.bronze.transactions
+GROUP BY country
+ORDER BY total_rows DESC;
+
+SELECT is_account_group_member('retail_all_regions') AS all_regions;
+
 --Row filter on the table validation
 SELECT table_schema, table_name, filter_name, target_columns
 FROM retail.information_schema.row_filters;
